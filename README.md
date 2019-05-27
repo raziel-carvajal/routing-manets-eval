@@ -12,4 +12,4 @@ We address the following research questions:
 1. :pencil: to complete...
 
 # Progress
-Progress is followed using a board in [Trello](trello.com); find more details in [this link](https://trello.com/b/ZMJaE2mZ) (only authorized members can see this content).
+Progress is followed using a board in [Trello](https://trello.com); find more details in [this link](https://trello.com/b/ZMJaE2mZ) (only authorized members can see this content).
