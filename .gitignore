@@ -1,3 +1,5 @@
 *.so
 Makefile
 src/**/out
+configs/built/*
+!configs/built/.nothing
