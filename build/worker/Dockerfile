@@ -34,7 +34,7 @@ run apt-get -y --no-install-recommends install \
   wget \
   curl
 
-add omnetpp-5.5.1-src-core.tgz .
+add build/worker/omnetpp-5.5.1-src-core.tgz .
 # in case the docker-compose version is lower than 3.0
 run if [ ! -d omnetpp-5.5.1 ] ; then tar xof omnetpp-5.5.1-src-core.tgz ; fi
 # Compilation of OMNeT++
@@ -43,9 +43,11 @@ run cd omnetpp-5.5.1 && \
   make MODE=release -j8
 
 
-add inet-4.2.0-src.tgz .
+add build/worker/inet-4.2.0-src.tgz .
 # in case the docker-compose version is lower than 3.0
 run if [ ! -d inet4 ] ; then tar xof inet-4.2.0-src.tgz ; fi
 # Compilation of OMNeT++
 run mv inet4 inet && mv inet omnetpp-5.6/samples/ && \
   cd omnetpp-5.6/samples/inet && make makefiles && make -j8
+
+add bin bin
