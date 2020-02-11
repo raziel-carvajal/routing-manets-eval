@@ -3,8 +3,8 @@ maintainer Raziel Carvajal-Gomez <raziel.carvajal@uclouvain.be>
 
 workdir /usr/manet_routing_benchmark
 
-env INET_ROOT=/usr/manet_routing_benchmark/omnetpp-5.6/samples/inet
-env PATH=/usr/manet_routing_benchmark/omnetpp-5.6/bin:${INET_ROOT}/bin:${PATH}
+env INET_ROOT=/usr/manet_routing_benchmark/omnetpp-5.5.1/samples/inet
+env PATH=/usr/manet_routing_benchmark/omnetpp-5.5.1/bin:${INET_ROOT}/bin:${PATH}
 env INET_NED_PATH="$INET_ROOT/src:$INET_ROOT/tutorials:$INET_ROOT/showcases:$INET_ROOT/examples"
 
 run apt-get update
@@ -47,7 +47,7 @@ add build/worker/inet-4.2.0-src.tgz .
 # in case the docker-compose version is lower than 3.0
 run if [ ! -d inet4 ] ; then tar xof inet-4.2.0-src.tgz ; fi
 # Compilation of OMNeT++
-run mv inet4 inet && mv inet omnetpp-5.6/samples/ && \
-  cd omnetpp-5.6/samples/inet && make makefiles && make -j8
+run mv inet4 inet && mv inet omnetpp-5.5.1/samples/ && \
+  cd omnetpp-5.5.1/samples/inet && make makefiles && make -j8
 
 add bin bin
