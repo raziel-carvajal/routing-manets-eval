@@ -3,3 +3,4 @@ Makefile
 src/**/out
 configs/built/*
 !configs/built/.nothing
+build/worker/*.tgz
