@@ -51,3 +51,5 @@ run mv inet4 inet && mv inet omnetpp-5.5.1/samples/ && \
   cd omnetpp-5.5.1/samples/inet && make makefiles && make -j8
 
 add bin bin
+
+cmd cd bin && ./run-config-in-worker.sh ${INI_FILE} ${EXPERIMENT} 
