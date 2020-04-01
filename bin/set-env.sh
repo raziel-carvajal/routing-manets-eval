@@ -23,11 +23,13 @@ endStr="End of ${_0}"
 
 [ ! -d ${1} ] && echo -e "Error: ${1} isn't a directory.\n${endStr}" && exit 1
 
+loc=`pwd`
 # set environment variables for omnet++
 cd ${1} && source setenv
 [ ${?} -ne 0 ] && exit 1
 # set environment variables for inet
 cd samples/inet && source setenv
 [ ${?} -ne 0 ] && exit 1
+cd ${loc}
 
-echo "Ok, ${_0} ends successfully."
+echo -e "Ok, everything ready to use Omnet/Inet. \n${endStr}"
