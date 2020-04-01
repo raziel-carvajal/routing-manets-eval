@@ -2,7 +2,6 @@
 import argparse
 import networkx as nx
 import utils_for_traces as utils
-import xml.etree.ElementTree as ET
 from pymobility.models.mobility import random_waypoint
 from sys import exit
 
@@ -16,7 +15,7 @@ def getArgs():
       topologies are connected, i. e. on each topology there exist (at least) \
       a path between any pair of nodes.')
   p.add_argument(
-      '--cma-length', dest='area_l', type=int, default=50,
+      '--cma-height', dest='area_l', type=int, default=50,
       help='Length of communication area.')
   p.add_argument(
       '--cma-width', dest='area_w', type=int, default=50,
@@ -28,7 +27,7 @@ def getArgs():
       '--transmission-range', dest='tx', type=int, default=10,
       help='node transmission range')
   p.add_argument(
-      '--walks', dest='walks', type=int, default=10,
+      '--walks', dest='walks', type=int, default=1,
       help='Number of network topologies in this trace.')
   return p.parse_args()
 
@@ -45,11 +44,10 @@ class CommunicationArea(object):
 
 
 ARGS = getArgs()
-HISTORY = {i: [] for i in range(0, ARGS.nodes)}
+HISTORY = { i: [] for i in range(ARGS.nodes) }
 NBRS, ROUTING_INFO = {}, {}
 CMA = CommunicationArea(ARGS.area_l, ARGS.area_w, ARGS.nodes)
 G = nx.Graph()
-# SRC_NODES = ET.Element('root')
 
 if __name__ == '__main__':
   traceNo = 0
@@ -66,7 +64,7 @@ if __name__ == '__main__':
       print '\ttry #' + str(t) + ' ...'
     print 'Topology #' + str(traceNo) + ' is connected!'
     # update dictionary of neighbors
-    NBRS[traceNo] = [len(G.neighbors(n)) for n in range(1, ARGS.nodes + 1)]
+    NBRS[traceNo] = [len(G.neighbors(n)) for n in range(ARGS.nodes)]
     # plot snapshots of network
     utils.plotSnapshot(G, traceNo, CMA.positions, (ARGS.area_l, ARGS.area_w))
     # update HISTORY of positions
@@ -78,3 +76,4 @@ if __name__ == '__main__':
   utils.storeTrace('trace.bm', HISTORY)
   utils.storeRoutingInfo('routingInformation.csv', ROUTING_INFO)
   utils.storeNeigsCardinality('neighborsCardinality.csv', NBRS, ARGS.nodes)
+  utils.makeAndStoreInitialPosition('scenario.xml', HISTORY)

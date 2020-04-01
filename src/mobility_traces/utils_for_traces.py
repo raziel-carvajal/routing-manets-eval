@@ -1,11 +1,12 @@
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
+import xml.etree.ElementTree as ET
 
 
 def plotSnapshot(g, snapshotId, positions, dimensions):
   posMap = {}
-  k = 1
+  k = 0
   for p in positions:
     posMap[k] = [p[0], p[1]]
     k = k + 1
@@ -14,8 +15,8 @@ def plotSnapshot(g, snapshotId, positions, dimensions):
   plt.xlim((0, dimensions[0]))
   plt.yticks(range(0, dimensions[1] + 5, 5))
   plt.ylim((0, dimensions[1]))
-  nx.draw_networkx(g, pos=posMap, node_size=40,
-                   with_labels=True, font_size=6, node_shape='s', linewidths=0.5)
+  nx.draw_networkx(
+    g, pos=posMap, node_size=40, with_labels=True, font_size=6, node_shape='s', linewidths=0.5)
   plt.savefig('snapshot{}.pdf'.format(snapshotId))
   plt.clf()
 
@@ -62,13 +63,13 @@ def getDistance(a, b):
 
 
 def updateGraph(g, coords, tx):
-  nodes = range(1, len(coords) + 1)
+  nodes = range(len(coords))
   edges = []
   for n in nodes:
-    a = coords[n - 1]
-    others = range(1, len(nodes) + 1)
+    a = coords[n]
+    others = range(len(nodes))
     others.remove(n)
-    distances = sorted([(getDistance(a, coords[m - 1]), m) for m in others])
+    distances = sorted([(getDistance(a, coords[m]), m) for m in others])
     i = 0
     while distances[i][0] <= tx:
       edges.append((n, distances[i][1]))
@@ -77,6 +78,20 @@ def updateGraph(g, coords, tx):
   g.add_nodes_from(nodes)
   g.add_edges_from(edges, attr_dict=None)
 
+
+def makeAndStoreInitialPosition(fileName, positions):
+  scenario = ET.Element('scenario')
+  for n, p in positions.iteritems():
+    ET.SubElement(scenario, 'set-param', attrib={
+      't': "0", 'module': "host[{}].mobility".format(n), 'par': "initialX",
+      'value': "{}m".format( round(p[0][0], 2) ) })
+    ET.SubElement(scenario, 'set-param', attrib={
+      't': "0", 'module': "host[{}].mobility".format(n), 'par': "initialY",
+      'value': "{}m".format( round(p[0][1], 2) ) })
+    ET.SubElement(scenario, 'set-param', attrib={
+      't': "0", 'module': "host[{}].mobility".format(n), 'par': "initialZ", 'value': "0m" })
+  tree = ET.ElementTree(scenario)
+  tree.write(fileName)
 
 class ComponentMatrix(object):
   def __init__(self, nodes, components):
