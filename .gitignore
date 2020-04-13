@@ -1,3 +1,7 @@
 *.so
 Makefile
 *.pyc
+configs/built/*
+!configs/built/.nothing
+networks/built/*
+!networks/built/.nothing
