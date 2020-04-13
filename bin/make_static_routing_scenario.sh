@@ -41,11 +41,13 @@ python get_random_waypoint_trace.py --cma-height ${CMA_HEIGHT} --cma-width ${CMA
 mv *.pdf ${origin}/${netsDir}/pdfs ; mv *.bm *.csv *.xml ${origin}/${netsDir}
 cd ${origin}
 
-Rscript -e "\
+for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
+  Rscript -e "\
   source('src/datasets/utils.R'); \
   ds <- read.csv('${netsDir}/routingInformation.csv'); \
-  getSrcDstPairs(ds, ${HOPS_BTW_PAIRS}, ${ROUTES}, 0)" | grep -e "^[1-9]" \
-  > ${netsDir}/chosenRoutes.data
+  getSrcDstPairs(ds, ${hops}, ${ROUTES}, 0)" | grep -e "^[1-9]" \
+  >> ${netsDir}/chosenRoutes.data
+done
 
 # make NED file
 nedFile="${netsDir}/${scnId}.ned"
@@ -65,18 +67,23 @@ sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
 
-echo "[Config ${scnId}]" >>${iniFile}
-# complete INI file with setting attributes of application
-time=1
-routes="${netsDir}/chosenRoutes.data"
-limit=`wc -l ${routes} | awk '{print $1}'`
-while [ ${time} -le ${limit} ]; do
-  route=`sed "${time}q;d" ${routes}`
-  src=`echo ${route} | awk '{print $2}'`
-  dst=`echo ${route} | awk '{print $3}'`
-  echo -e "\
-  *.host[${dst}].app[0].startTime = ${time}s \n \
-  *.host[${dst}].app[0].destAddr = \"host[${src}]\" \n" >>${iniFile}
-  let time=time+1
+# complete INI file with one configuration per hop number between
+routes=".temp"
+rm -fr ${routes}
+for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
+  echo "[Config ${scnId}_with_${hops}_hops]" >>${iniFile}
+  time=1
+  grep "hops=${hops}" "${netsDir}/chosenRoutes.data" > ${routes}
+  limit=`wc -l ${routes} | awk '{print $1}'`
+  while [ ${time} -le ${limit} ]; do
+    route=`sed "${time}q;d" ${routes}`
+    src=`echo ${route} | awk '{print $2}'`
+    dst=`echo ${route} | awk '{print $3}'`
+    echo -e "\
+    *.host[${dst}].app[0].startTime = ${time}s \n \
+    *.host[${dst}].app[0].destAddr = \"host[${src}]\" \n" >>${iniFile}
+    let time=time+1
+  done
 done
+rm -fr ${routes}
 sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
