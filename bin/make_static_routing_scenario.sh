@@ -16,15 +16,16 @@
 #       CREATED: 03/25/2020 09:29:40 PM
 #      REVISION:  ---
 #===============================================================================
-endMsg="End of ${0}"
+eos="End of ${0}"
 
 [ ! -d bin ] && echo -e "Error. Run ${0} from the root directory of this git \
-  repository. \n${endMsg}" && exit 1
+  repository. \n${eos}" && exit 1
 
-( [ -v ${NODES} ] || [ -v ${TX} ] || [ -v ${CMA_WIDTH} ] || [ -v ${CMA_HEIGHT} ] || \
-  [ -v ${PROTOCOL} ] || [ -v ${HOPS_BTW_PAIRS} ] || [ -v ${ROUTES} ] ) && \
-  echo -e "Error. Before running ${0} set the following variables: NODES, TX, CMA_WIDTH, \
-    CMA_HEIGHT, PROTOCOL, HOPS_BTW_PAIRS and ROUTES \n${endMsg}" && exit 1
+( [ ! -v NODES ] || [ ! -v TX ] || [ ! -v CMA_WIDTH ] || [ ! -v CMA_HEIGHT ] || \
+  [ ! -v PROTOCOL ] || [ ! -v HOPS_BTW_PAIRS ] || [ ! -v ROUTES ] || \
+  [ ! -v PING_INTERVAL ] ) && echo -e "Error. Before running ${0} set the following \
+  variables: NODES, TX, CMA_WIDTH, CMA_HEIGHT, PROTOCOL, HOPS_BTW_PAIRS, ROUTES and \
+  PING_INTERVAL \n${eos}" && exit 1
 
 d=`date --rfc-3339='ns'`
 d1=`echo ${d} | awk '{print $1}' | awk -F '-' '{print $1"_"$2"_"$3}'`
@@ -41,6 +42,7 @@ python get_random_waypoint_trace.py --cma-height ${CMA_HEIGHT} --cma-width ${CMA
 mv *.pdf ${origin}/${netsDir}/pdfs ; mv *.bm *.csv *.xml ${origin}/${netsDir}
 cd ${origin}
 
+echo -e "count src dst hops route" >> ${netsDir}/chosenRoutes.data
 for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
   Rscript -e "\
   source('src/datasets/utils.R'); \
@@ -66,24 +68,30 @@ sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
 sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
+sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
 
 # complete INI file with one configuration per hop number between
 routes=".temp"
 rm -fr ${routes}
 for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
   echo "[Config ${scnId}_with_${hops}_hops]" >>${iniFile}
-  time=1
   grep "hops=${hops}" "${netsDir}/chosenRoutes.data" > ${routes}
-  limit=`wc -l ${routes} | awk '{print $1}'`
-  while [ ${time} -le ${limit} ]; do
-    route=`sed "${time}q;d" ${routes}`
-    src=`echo ${route} | awk '{print $2}'`
-    dst=`echo ${route} | awk '{print $3}'`
+  if [ `awk '{print $2}' ${routes} | uniq | wc -w` -eq 1 ] ; then
+    src=`awk '{print $2}' ${routes} | uniq`
+    dstsList=""
+    time=1
+    for dst in `awk '{print $3}' ${routes}` ; do
+      dstsList="${dstsList} host[${dst}]"
+      let time=${time}+1
+    done
+    let time=${time}*${PING_INTERVAL}
     echo -e "\
-    *.host[${dst}].app[0].startTime = ${time}s \n \
-    *.host[${dst}].app[0].destAddr = \"host[${src}]\" \n" >>${iniFile}
-    let time=time+1
-  done
+    *.host[${src}].app[0].startTime = ${PING_INTERVAL}s \n \
+    *.host[${src}].app[0].destAddr = \"${dstsList}\" \n" >>${iniFile}
+  else
+    echo "WARNING. Several source nodes in routes with HOPS=${hops}; this configuration will \
+      be ignored."
+  fi
 done
 rm -fr ${routes}
 sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
