@@ -11,7 +11,7 @@ getNodeId <- function(s) {
 # scalars
 #   - rcvdPkFromLl:count
 getScalarDataset <- function(omnetDS, scalar) {
-  scalar <- paste('name(', scalar, ')', sep='')
+  scalar <- paste('name("', scalar, '")', sep='')
   omnetDS <- paste(omnetDS, '.sca', sep = '')
   ds <- loadDataset(omnetDS, add(select=scalar))
   # nodes will be a vector of integers (nodes IDs)
@@ -22,7 +22,7 @@ getScalarDataset <- function(omnetDS, scalar) {
 }
 
 getVectorDataset <- function(omnetDS, vector) {
-  vector <- paste('name(', vector, ')', sep='')
+  vector <- paste('name("', vector, '")', sep='')
   omnetDS <- paste(omnetDS, '.vec', sep='')
   ds <- loadVectors(loadDataset(omnetDS, add(select=vector)), NULL)
   temp <- data.frame(
@@ -43,12 +43,17 @@ getSrcDstPairs <- function(ds, hopsBtwPairs, pairsNo, netId) {
   # get sample of interest
   dsSample <- ds[ ds$topologyID == netId, ]
   dsSample <- dsSample[ dsSample$hopsNo == hopsBtwPairs, ]
+  dsSample <- dsSample[ order(dsSample$src), ]
   # for every pair (a, b) take rid of permutation (b, a)
+  idsAdd <- unique(dsSample$src + dsSample$dst)
+  temp <- rep(FALSE, length(idsAdd))
+  names(temp) <- idsAdd
+  print(temp)
   indx <- sapply(1:length(dsSample$src), function(i) {
-    s <- dsSample[ i, ]
-    prevDs <- head(dsSample, n=(i-1))
-    temp <- subset(prevDs, src == s$dst)
-    ifelse(length(temp$src) == 0, i, NA)
+    key <- toString(dsSample[i, ]$src + dsSample[i, ]$dst)
+    r <- ifelse(temp[key], NA, i)
+    temp[key] <- TRUE
+    r
   })
   # get the requested number of pairs
   indx <- head(indx[ !is.na(indx) ], n=pairsNo)
