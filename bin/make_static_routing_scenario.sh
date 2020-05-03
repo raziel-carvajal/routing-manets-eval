@@ -69,29 +69,36 @@ sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
 sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
+sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
 
-# complete INI file with one configuration per hop number between
+# complete INI with one configuration per distance (hops) between sources and destinations
+time=1
 routes=".temp"
 rm -fr ${routes}
 for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
-  echo "[Config ${scnId}_with_${hops}_hops]" >>${iniFile}
+  dstsList=""
   grep "hops=${hops}" "${netsDir}/chosenRoutes.data" > ${routes}
-  if [ `awk '{print $2}' ${routes} | uniq | wc -w` -eq 1 ] ; then
-    src=`awk '{print $2}' ${routes} | uniq`
-    dstsList=""
-    time=1
+  src=`awk '{print $2}' ${routes} | uniq`
+  # single source node for every destination
+  if [ `echo ${src} | wc -w` -eq 1 ] ; then
     for dst in `awk '{print $3}' ${routes}` ; do
       dstsList="${dstsList} host[${dst}]"
       let time=${time}+1
     done
-    let time=${time}*${PING_INTERVAL}
-    echo -e "\
-    *.host[${src}].app[0].startTime = ${PING_INTERVAL}s \n \
-    *.host[${src}].app[0].destAddr = \"${dstsList}\" \n" >>${iniFile}
-  else
-    echo "WARNING. Several source nodes in routes with HOPS=${hops}; this configuration will \
-      be ignored."
+    echo "[Config ${scnId}_with_${hops}_hops]" >> ${iniFile}
+    echo "*.host[${src}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
+  else # several source nodes to destinations
+    for s in `echo ${src}` ; do
+      dstsList=""
+      for dst in `grep " ${s} " ${routes} | awk '{print $3}'` ; do
+        dstsList="${dstsList} host[${dst}]"
+        let time=${time}+1
+      done
+      echo "[Config ${scnId}_with_${hops}_hops_${s}]" >> ${iniFile}
+      echo "*.host[${s}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
+    done
   fi
 done
 rm -fr ${routes}
+let time=${time}*${PING_INTERVAL}
 sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
