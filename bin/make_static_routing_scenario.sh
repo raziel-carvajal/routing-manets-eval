@@ -88,7 +88,7 @@ for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
       dstsList="${dstsList} host[${dst}]"
       let time=${time}+1
     done
-    echo "[Config ${scnId}_with_${hops}_hops]" >> ${iniFile}
+    echo "[Config ${scnId}_with_${hops}_hops_route_discovery]" >> ${iniFile}
     echo "*.host[${src}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
   else # several source nodes to destinations
     for s in `echo ${src}` ; do
@@ -97,7 +97,7 @@ for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
         dstsList="${dstsList} host[${dst}]"
         let time=${time}+1
       done
-      echo "[Config ${scnId}_with_${hops}_hops_${s}]" >> ${iniFile}
+      echo "[Config ${scnId}_with_${hops}_hops_${s}_route_discovery]" >> ${iniFile}
       echo "*.host[${s}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
     done
   fi
@@ -130,7 +130,7 @@ for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
   grep "hops=${hops}" "${netsDir}/chosenRoutes.data" | head -1 > ${route}
   src=`awk '{print $2}' ${route}`
   dst=`awk '{print $3}' ${route}`
-  echo "[Config ${scnId}_with_${hops}_hops]" >> ${iniFile}
+  echo "[Config ${scnId}_with_${hops}_hops_route_maintenance]" >> ${iniFile}
   echo "*.host[${src}].app[0].destAddr = \"host[${dst}]\"" >> ${iniFile}
 done
 rm -fr ${route}

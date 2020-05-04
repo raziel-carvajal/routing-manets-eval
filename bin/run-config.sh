@@ -33,6 +33,9 @@ source bin/set-env.sh ${1}
 [ ${?} -ne 0 ] && \
   echo -e "Error. Cannot set environment for omnet++/inet.\n${endStr}" && exit 1
 
-opp_run -u Cmdenv -n networks/built:${INET_NED_PATH} -l ${INET_ROOT}/src/INET -c ${3} -f ${2}
+temp=`dirname ${2}`"/${3}.stdout"
+opp_run -u Cmdenv -n networks/built:${INET_NED_PATH} -l ${INET_ROOT}/src/INET -c ${3} -f ${2} \
+  > ${temp}
+mv ${temp} $(dirname ${2})"/results/"
 
 echo "Ok, ${0} ends successfully."
