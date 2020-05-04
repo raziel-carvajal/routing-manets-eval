@@ -23,9 +23,9 @@ eos="End of ${0}"
 
 ( [ ! -v NODES ] || [ ! -v TX ] || [ ! -v CMA_WIDTH ] || [ ! -v CMA_HEIGHT ] || \
   [ ! -v PROTOCOL ] || [ ! -v HOPS_BTW_PAIRS ] || [ ! -v ROUTES ] || \
-  [ ! -v PING_INTERVAL ] ) && echo -e "Error. Before running ${0} set the following \
-  variables: NODES, TX, CMA_WIDTH, CMA_HEIGHT, PROTOCOL, HOPS_BTW_PAIRS, ROUTES and \
-  PING_INTERVAL \n${eos}" && exit 1
+  [ ! -v PING_INTERVAL ] || [ ! -v SENT_PINGS ] ) && echo -e "Error. Before running ${0} set \
+  the following variables: NODES, TX, CMA_WIDTH, CMA_HEIGHT, PROTOCOL, HOPS_BTW_PAIRS, \
+  ROUTES, PING_INTERVAL and SENT_PINGS \n${eos}" && exit 1
 
 d=`date --rfc-3339='ns'`
 d1=`echo ${d} | awk '{print $1}' | awk -F '-' '{print $1"_"$2"_"$3}'`
@@ -57,7 +57,9 @@ cat networks/aodv_idealnet_ackmac.ned >${nedFile}
 sed -i -e "s/NAMESPACE/${scnId}_${d};/" ${nedFile}
 sed -i -e "s/NETWORK_NAME/${scnId}/" ${nedFile}
 
-# make INI file
+#----------------------------------------------------------------------------------------------
+# make INI file thought to evaluate the route discovery phase of a routing algo
+#----------------------------------------------------------------------------------------------
 iniFile="${cnfgsDir}/${scnId}.ini"
 cat configs/aodv_idealnet_ackmac.ini >${iniFile}
 scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
@@ -68,6 +70,7 @@ sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
 sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
 sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
+sed -i -e "s/PING_COUNT/1/" ${iniFile}
 sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
 sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
 
@@ -102,3 +105,36 @@ done
 rm -fr ${routes}
 let time=${time}*${PING_INTERVAL}
 sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
+mv ${iniFile} "${cnfgsDir}/${scnId}_route_discovery.ini"
+
+#----------------------------------------------------------------------------------------------
+# make INI file thought to evaluate the route maintance phase of a routing algo
+#----------------------------------------------------------------------------------------------
+iniFile="${cnfgsDir}/${scnId}.ini"
+cat configs/aodv_idealnet_ackmac.ini >${iniFile}
+scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
+echo ${scenario} >>${iniFile}
+
+sed -i -e "s/NETWORK_NAME/${scnId}_${d}.${scnId}/" ${iniFile}
+sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
+sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
+sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
+sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
+sed -i -e "s/PING_COUNT/-1/" ${iniFile}
+sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
+sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
+
+route=".temp"
+rm -fr ${route}
+for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
+  grep "hops=${hops}" "${netsDir}/chosenRoutes.data" | head -1 > ${route}
+  src=`awk '{print $2}' ${route}`
+  dst=`awk '{print $3}' ${route}`
+  echo "[Config ${scnId}_with_${hops}_hops]" >> ${iniFile}
+  echo "*.host[${src}].app[0].destAddr = \"host[${dst}]\"" >> ${iniFile}
+done
+rm -fr ${route}
+# NOTE the simulation will finish when a fixed number of ping messages is sent
+let time=${PING_INTERVAL}*(${SENT_PINGS}+1)
+sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
+mv ${iniFile} "${cnfgsDir}/${scnId}_route_maintenance.ini"
