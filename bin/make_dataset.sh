@@ -26,20 +26,25 @@ eos="End of ${0}"
 ( [ ! -v DATASET_OPTIONS_LIST ] || [ ! -v SEND_INTERVAL ] ) && \
   echo -e "ERROR. Before running ${0} set the variables SEND_INTERVAL and \
     DATASET_OPTIONS_LIST; this latter variable might have as longest value (list of strings \
-    separated with spaces) the following string: --with-succ-routereq-latency \
-    \
+    separated with spaces) the following string: --with-routereq \
     \n${eos}" &&  exit 1
 
 datasetLoc=`dirname ${1}`"/results"
-cnfgId=`basename ${1} | awk -F '.ini' '{print $1}'`
+iniFid=`basename ${1} | awk -F '.ini' '{print $1}'`
+outputLoc=`basename ${1}`"/${iniFid}"
 netDir=`dirname ${1} | sed -e 's/configs/networks/g'`
 allRoutes="${netDir}/chosenRoutes.data"
+rm -fr ${outputLoc} ; mkdir ${outputLoc}
 
-for hopStr in `grep "hops=" ${allRoutes} | awk '{print $4}' | uniq` ; do
-  hopsNo=`echo ${hopStr} | awk -F '=' '{print $2}'`
+for config in `grep "^\\[Config" ${1} | awk '{print $2}'` ; do
+  config=`echo ${config} | awk -F "]" '{print $1}'`
+  hopsNo=`echo ${config} | awk -F "_with_" '{print $2}' | awk -F "_" '{print $1}'`
+  srcId=`echo ${config} | awk -F "_with_" '{print $2}' | awk -F "_" '{print $3}'`
+
   routes=`pwd`"/.routesWith${hopsNo}hops"
-  grep "${hopStr}" ${allRoutes} | awk '{print $2, $3}' > ${routes}
-  Rscript src/datasets/make_dataset.R ${datasetLoc} ${cnfgId} ${routes} ${hopsNo} \
+  grep "hops=${hopsNo}" ${allRoutes} | grep " ${srcId} " | awk '{print $2, $3}' > ${routes}
+
+  Rscript src/datasets/make_dataset.R ${datasetLoc} ${config} ${routes} \
     ${SEND_INTERVAL} ${DATASET_OPTIONS_LIST}
   exit 1
   rm -f ${routes}
