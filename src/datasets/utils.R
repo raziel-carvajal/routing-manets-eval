@@ -65,3 +65,7 @@ getSrcDstPairs <- function(ds, hopsBtwPairs, pairsNo, netId) {
     path = dsSample$path
   )
 }
+
+storeDataset <- function(ds, dstPath, fileName) {
+  write.table( ds, file=paste(dstPath, fileName, sep='/'), row.names=F )
+}
