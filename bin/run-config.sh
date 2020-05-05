@@ -19,7 +19,7 @@
 endStr="End of ${0}"
 # check correct # of arguments
 [ ${#} -ne 3 ] && \
-  echo -e "Usage: ${0} OMNET_PATH INI_FILE CONFIG_TO_RUN\n${endStr}"  && exit 1
+  echo -e "Usage: source ${0} OMNET_PATH INI_FILE CONFIG_TO_RUN\n${endStr}"  && exit 1
 # check that the INI file exist
 [ ! -f ${2} ] && \
   echo -e "Error: configuration (*.ini) file doesn't exist.\n${endStr}" && exit 1
@@ -35,7 +35,7 @@ source bin/set-env.sh ${1}
 
 temp=`dirname ${2}`"/${3}.stdout"
 opp_run -u Cmdenv -n networks/built:${INET_NED_PATH} -l ${INET_ROOT}/src/INET -c ${3} -f ${2} \
-  > ${temp}
+  &> ${temp}
 mv ${temp} $(dirname ${2})"/results/"
 
 echo "Ok, ${0} ends successfully."
