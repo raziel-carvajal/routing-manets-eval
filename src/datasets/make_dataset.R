@@ -43,11 +43,11 @@ if(args$wrdl){
       routeReqRecv$timestamp >= t &
       routeReqRecv$timestamp < (t + args$send_interval) & routeReqRecv$nodeId == dst ,
     ]
-    rrTb <- head(rrDstReply[ order(rrDstReply$timestamp), ], n=1)
+    rrTb <- head(rrDstReply[ order(rrDstReply$timestamp, decreasing=TRUE), ], n=1)
 
     ifelse(
       length(rrTa$nodeId) == 1 & length(rrTb$nodeId) == 1,
-      (rrTb$timestamp - rrTa$timestamp) * 2,
+      (rrTb$timestamp - rrTa$timestamp) * 2 * 1000, # RTT in milliseconds
       NA
     )
   })

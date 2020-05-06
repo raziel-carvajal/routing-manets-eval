@@ -41,7 +41,12 @@ for config in `grep "^\\[Config" ${1} | awk '{print $2}'` ; do
   hopsNo=`echo ${config} | awk -F "_with_" '{print $2}' | awk -F "_" '{print $1}'`
 
   routes=`pwd`"/.routesWith${hopsNo}hops"
-  grep "hops=${hopsNo}" ${allRoutes} | awk '{print $2, $3}' > ${routes}
+  srcId=`echo ${config} | awk -F "_hops_" '{print $2}' | awk -F "_" '{print $1}'`
+  if [[ ${srcId} =~ ^[0-9][0-9]* ]]; then # there are several sources
+    grep "hops=${hopsNo}" ${allRoutes} | grep "\[${srcId}" | awk '{print $2, $3}' > ${routes}
+  else # source is unique
+    grep "hops=${hopsNo}" ${allRoutes} | awk '{print $2, $3}' > ${routes}
+  fi
 
   Rscript src/datasets/make_dataset.R ${datasetLoc} ${config} ${routes} \
     ${SEND_INTERVAL} ${hopsNo} ${outputLoc} ${DATASET_OPTIONS_LIST}
