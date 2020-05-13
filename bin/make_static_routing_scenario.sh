@@ -22,16 +22,16 @@ eos="End of ${0}"
   repository. \n${eos}" && exit 1
 
 ( [ ! -v NODES ] || [ ! -v TX ] || [ ! -v CMA_WIDTH ] || [ ! -v CMA_HEIGHT ] || \
-  [ ! -v PROTOCOL ] || [ ! -v HOPS_BTW_PAIRS ] || [ ! -v ROUTES ] || \
-  [ ! -v PING_INTERVAL ] || [ ! -v SENT_PINGS ] ) && echo -e "Error. Before running ${0} set \
-  the following variables: NODES, TX, CMA_WIDTH, CMA_HEIGHT, PROTOCOL, HOPS_BTW_PAIRS, \
-  ROUTES, PING_INTERVAL and SENT_PINGS \n${eos}" && exit 1
+  [ ! -v HOPS_BTW_PAIRS ] || [ ! -v ROUTES ] || [ ! -v PING_INTERVAL ] ) && \
+  echo -e "Error. Before running ${0} set the following variables: \
+  NODES, TX, CMA_WIDTH, CMA_HEIGHT, HOPS_BTW_PAIRS, ROUTES, and PING_INTERVAL. \n${eos}" \
+  && exit 1
 
 d=`date --rfc-3339='ns'`
 d1=`echo ${d} | awk '{print $1}' | awk -F '-' '{print $1"_"$2"_"$3}'`
 d2=`echo ${d} | awk '{print $2}' | awk -F '.' '{print $2}' | awk -F '+' '{print "_"$1}'`
 d=`echo "${d1}${d2}"`
-scnId="cnfg_${NODES}_${TX}_${CMA_WIDTH}x${CMA_HEIGHT}_${PROTOCOL}"
+scnId="cnfg_${NODES}_${TX}_${CMA_WIDTH}x${CMA_HEIGHT}"
 
 netsDir=networks/built/"${scnId}_${d}" ; cnfgsDir=configs/built/"${scnId}_${d}"
 mkdir -p ${netsDir}/pdfs ; mkdir -p ${cnfgsDir}
@@ -53,88 +53,43 @@ done
 
 # make NED file
 nedFile="${netsDir}/${scnId}.ned"
-cat networks/aodv_idealnet_ackmac.ned >${nedFile}
+cat networks/general.ned >${nedFile}
 sed -i -e "s/NAMESPACE/${scnId}_${d};/" ${nedFile}
 sed -i -e "s/NETWORK_NAME/${scnId}/" ${nedFile}
 
 #----------------------------------------------------------------------------------------------
-# make INI file thought to evaluate the route discovery phase of a routing algo
+# make INI file per routing protocol
 #----------------------------------------------------------------------------------------------
-iniFile="${cnfgsDir}/${scnId}.ini"
-cat configs/aodv_idealnet_ackmac.ini >${iniFile}
-scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
-echo ${scenario} >>${iniFile}
+for protocol in `cat configs/protocols` ; do
+  iniFile="${cnfgsDir}/${scnId}_${protocol}.ini"
+  cat configs/general.ini >${iniFile}
+  scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
+  echo ${scenario} >>${iniFile}
 
-sed -i -e "s/NETWORK_NAME/${scnId}_${d}.${scnId}/" ${iniFile}
-sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
-sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
-sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
-sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
-sed -i -e "s/PING_COUNT/1/" ${iniFile}
-sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
-sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
+  ( [ ${protocol} != "aodv" ] && [ ${protocol} != "dsdv" ] ) && echo -e "Error. \
+    '${protocol}'  isn't listed as a routing protocol. \n${eos}" && exit 1
+  # add configuration of routing protocol
+  cat configs/${protocol}.ini >>${iniFile}
 
-# complete INI with one configuration per distance (hops) between sources and destinations
-time=1
-routes=".temp"
-rm -fr ${routes}
-for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
-  dstsList=""
-  grep "hops=${hops}" "${netsDir}/chosenRoutes.data" > ${routes}
-  src=`awk '{print $2}' ${routes} | uniq`
-  # single source node for every destination
-  if [ `echo ${src} | wc -w` -eq 1 ] ; then
-    for dst in `awk '{print $3}' ${routes}` ; do
-      dstsList="${dstsList} host[${dst}]"
-      let time=${time}+1
-    done
-    echo "[Config ${scnId}_with_${hops}_hops_route_discovery]" >> ${iniFile}
-    echo "*.host[${src}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
-  else # several source nodes to destinations
-    for s in `echo ${src}` ; do
-      dstsList=""
-      for dst in `grep " ${s} " ${routes} | awk '{print $3}'` ; do
-        dstsList="${dstsList} host[${dst}]"
-        let time=${time}+1
-      done
-      echo "[Config ${scnId}_with_${hops}_hops_${s}_route_discovery]" >> ${iniFile}
-      echo "*.host[${s}].app[0].destAddr = \"${dstsList}\"" >> ${iniFile}
-    done
-  fi
+  sed -i -e "s/NETWORK_NAME/${scnId}_${d}.${scnId}/" ${iniFile}
+  sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
+  sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
+  sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
+  sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
+  sed -i -e "s/PING_COUNT/1/" ${iniFile}
+  sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
+  sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
+
+  lineNo=2 ; lines=`wc -l ${netsDir}/chosenRoutes.data | awk '{print $1}'`
+  while [ ${lineNo} -ne ${lines} ]; do
+    route=`sed -n ${lineNo}p ${netsDir}/chosenRoutes.data`
+    src=`echo ${route} | awk '{print $2}'` ; dst=`echo ${route} | awk '{print $3}'`
+    hops=`echo ${route} | awk '{print $4}' | awk -F '=' '{print $2}'`
+
+    echo "[Config ${scnId}_${protocol}_with_${hops}_${lineNo}]" >> ${iniFile}
+    echo "*.host[${src}].app[0].destAddr = \"host[${dst}]\"" >> ${iniFile}
+    let lineNo=lineNo+1
+  done
+  let time=${PING_INTERVAL}*2
+  sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
 done
-rm -fr ${routes}
-let time=${time}*${PING_INTERVAL}
-sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
-mv ${iniFile} "${cnfgsDir}/${scnId}_route_discovery.ini"
-
-#----------------------------------------------------------------------------------------------
-# make INI file thought to evaluate the route maintance phase of a routing algo
-#----------------------------------------------------------------------------------------------
-iniFile="${cnfgsDir}/${scnId}.ini"
-cat configs/aodv_idealnet_ackmac.ini >${iniFile}
-scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
-echo ${scenario} >>${iniFile}
-
-sed -i -e "s/NETWORK_NAME/${scnId}_${d}.${scnId}/" ${iniFile}
-sed -i -e "s/NODES_NUM/${NODES}/" ${iniFile}
-sed -i -e "s/TX_RANGE/${TX}m/" ${iniFile}
-sed -i -e "s/AREA_MAX_X/${CMA_WIDTH}m/" ${iniFile}
-sed -i -e "s/AREA_MAX_Y/${CMA_HEIGHT}m/" ${iniFile}
-sed -i -e "s/PING_COUNT/-1/" ${iniFile}
-sed -i -e "s/PING_INTERVAL/${PING_INTERVAL}s/" ${iniFile}
-sed -i -e "s/START_TIME/${PING_INTERVAL}s/" ${iniFile}
-
-route=".temp"
-rm -fr ${route}
-for hops in `echo -e ${HOPS_BTW_PAIRS}` ; do
-  grep "hops=${hops}" "${netsDir}/chosenRoutes.data" | head -1 > ${route}
-  src=`awk '{print $2}' ${route}`
-  dst=`awk '{print $3}' ${route}`
-  echo "[Config ${scnId}_with_${hops}_hops_route_maintenance]" >> ${iniFile}
-  echo "*.host[${src}].app[0].destAddr = \"host[${dst}]\"" >> ${iniFile}
-done
-rm -fr ${route}
-# NOTE the simulation will finish when a fixed number of ping messages is sent
-let time=${PING_INTERVAL}*(${SENT_PINGS}+1)
-sed -i -e "s/STOP_APP_AT/${time}s/" ${iniFile}
-mv ${iniFile} "${cnfgsDir}/${scnId}_route_maintenance.ini"

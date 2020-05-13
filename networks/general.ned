@@ -2,7 +2,7 @@ package NAMESPACE
 import inet.common.scenario.ScenarioManager;
 import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.networklayer.ipv4.RoutingTableRecorder;
-import inet.node.aodv.AodvRouter;
+import inet.node.inet.ManetRouter;
 import inet.physicallayer.unitdisk.UnitDiskRadioMedium;
 
 network NETWORK_NAME {
@@ -10,7 +10,7 @@ network NETWORK_NAME {
     int numHosts;
 
   submodules:
-    host[numHosts]: AodvRouter;
+    host[numHosts]: ManetRouter;
     radioMedium: UnitDiskRadioMedium;
     routingTableRecorder: RoutingTableRecorder;
 
