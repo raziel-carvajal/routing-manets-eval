@@ -87,7 +87,7 @@ for protocol in `cat configs/protocols` ; do
     hops=`echo ${route} | awk '{print $4}' | awk -F '=' '{print $2}'`
 
     echo "[Config ${scnId}_${protocol}_with_${hops}_${lineNo}]" >> ${iniFile}
-    echo "*.host[${src}].app[0].destAddr = \"host[${dst}]\"" >> ${iniFile}
+    echo "*.host[${src}].app[0].destAddr=\"host[${dst}]\"" >> ${iniFile}
     let lineNo=lineNo+1
   done
   let time=${PING_INTERVAL}*2
