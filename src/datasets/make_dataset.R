@@ -9,54 +9,97 @@ parseArgs <- function() {
   # mandatory arguments
   p$add_argument('dataset_location', type='character')
   p$add_argument('config_id', type='character')
-  p$add_argument('routes_file', type='character')
+  p$add_argument('src_id', type='integer')
+  p$add_argument('dst_id', type='integer')
   p$add_argument('send_interval', type='integer')
   p$add_argument('hops_no', type='integer')
   p$add_argument('storage_loc', type='character')
+  p$add_argument('iterations', type='integer')
   # options
+  p$add_argument('--with-arp-latency', dest='warpl', action='store_true')
   p$add_argument('--with-route-discovery-latency', dest='wrdl', action='store_true')
-  p$add_argument('--with-pk-err-rate', dest='wper', action='store_true')
-  p$add_argument('--with-hops-num', dest='whn', action='store_true')
+  p$add_argument('--is-aodv-experiment', dest='isaodv', action='store_true')
+  p$add_argument('--is-dsdv-experiment', dest='isdsdv', action='store_true')
 
   p$parse_args()
 }
 args <- parseArgs()
-routes <- read.table(args$routes_file)
-names(routes) <- c('src', 'dst')
 
-# only takes first execution as there are several configuration per INI file
-dsf <- paste(args$dataset_location, '/', args$config_id, '-#0', sep='')
-if(args$wrdl){
-  sentMsgs <- getVectorDataset(dsf, 'packetSent:vector(packetBytes)')
-  routeReqRecv <- getVectorDataset(dsf, 'arpRequestSent:vector(packetBytes)')
+if(args$warpl){
+  arpLatency <- sapply(0:(args$iterations - 1), function(i) {
 
-  routeReqAnsw <- getVectorDataset(dsf, 'arpReplySent:vector(packetBytes)')
-  succRrLatencies <- sapply(1:length(routes$src), function(r_i) {
-    src <- routes$src[r_i]
-    dst <- routes$dst[r_i]
-    t <- r_i * args$send_interval
+    dsf <- paste(args$dataset_location, '/', args$config_id, '-#', i, sep='')
+    arpRequests <- getVectorDataset(dsf, 'arpRequestSent:vector(packetBytes)')
+    arpReplies <- getVectorDataset(dsf, 'arpReplySent:vector(packetBytes)')
+    src <- args$src_id
+    dst <- args$dst_id
 
-    sample <- sentMsgs[ sentMsgs$nodeId == src & sentMsgs$timestamp >= t, ]
-    rrTa <- head(sample[ order(sample$timestamp), ], n=1)
+    # in AODV an ARP session starts at the destination node
+    if(args$isaodv){
+      src <- args$dst_id
+      dst <- args$src_id
+    }
 
-    rrDstReply <- routeReqRecv[
-      routeReqRecv$timestamp >= t &
-      routeReqRecv$timestamp < (t + args$send_interval) & routeReqRecv$nodeId == dst ,
+    arpReplies <- arpReplies[ arpReplies$nodeId == dst, ]
+    endResoTime <- head(arpReplies[ order(arpReplies$timestamp), ], n=1)
+
+    arpRequests <- arpRequests[
+      arpRequests$nodeId == src & arpRequests$timestamp < endResoTime$timestamp,
     ]
-    rrTb <- head(rrDstReply[ order(rrDstReply$timestamp, decreasing=TRUE), ], n=1)
+    iniResoTime <- tail(arpRequests[ order(arpRequests$timestamp), ], n=1)
 
     ifelse(
-      length(rrTa$nodeId) == 1 & length(rrTb$nodeId) == 1,
-      (rrTb$timestamp - rrTa$timestamp) * 2 * 1000, # RTT in milliseconds
+      length(iniResoTime$nodeId) == 1 & length(endResoTime$nodeId) == 1,
+      (endResoTime$timestamp - iniResoTime$timestamp) * 1000, # ARP latency in milliseconds
       NA
     )
   })
-  # storeDataset <- function(ds, dstPath, fileName)
-  # TODO store distributions
+  # take rid of min/max
+  nas <- arpLatency[ is.na(arpLatency) ]
+  arpLatency <- arpLatency[ !is.na(arpLatency) ]
+  arpLatency <- arpLatency[ arpLatency != min(arpLatency) & arpLatency != max(arpLatency) ]
   storeDataset(
     data.frame(
-      route_discovery_latency=succRrLatencies,
-      hops_btw_src_dst=rep(paste("hops", args$hops_no, sep="_"), length(succRrLatencies)) ),
-    args$storage_loc, args$config_id
+      arp_latency=c( arpLatency, rep(NA, length(nas)) ),
+      hops_btw_src_dst=rep( args$hops_no, length(arpLatency) + length(nas) )
+    ),
+    args$storage_loc,
+    paste(args$config_id, "_", "arplatency", sep="")
+  )
+}
+
+if(args$wrdl){
+  routeDiscLat <- sapply(0:(args$iterations - 1), function(i) {
+
+    dsf <- paste(args$dataset_location, '/', args$config_id, '-#', i, sep='')
+
+    arpReplies <- getVectorDataset(dsf, 'arpReplySent:vector(packetBytes)')
+    # in AODV an ARP session starts at the destination node
+    if(args$isaodv){
+      arpReplies <- getVectorDataset(dsf, 'arpRequestSent:vector(packetBytes)')
+    }
+
+    arpReplies <- arpReplies[ arpReplies$nodeId == args$dst_id, ]
+    reachDst <- head(arpReplies[ order(arpReplies$timestamp), ], n=1)
+
+    ifelse(
+      length(reachDst$nodeId) == 1,
+      (reachDst$timestamp - args$send_interval) * 1000, # ARP latency in milliseconds
+      NA
+    )
+  })
+  # take rid of min/max
+  nas <- routeDiscLat[ is.na(routeDiscLat) ]
+  routeDiscLat <- routeDiscLat[ !is.na(routeDiscLat) ]
+  routeDiscLat <- routeDiscLat[
+    routeDiscLat != min(routeDiscLat) & routeDiscLat != max(routeDiscLat)
+  ]
+  storeDataset(
+    data.frame(
+      route_discovery_latency=c( routeDiscLat, rep(NA, length(nas)) ),
+      hops_btw_src_dst=rep( args$hops_no, length(routeDiscLat) + length(nas) )
+    ),
+    args$storage_loc,
+    paste(args$config_id, "_", "routediscoverylatency", sep="")
   )
 }
