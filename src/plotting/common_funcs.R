@@ -79,8 +79,8 @@ theme1 <- function(base_size=10, base_family="Helvetica") {
 theme2 <- function(base_size=10, base_family="Helvetica") {
   (theme_foundation(base_size=base_size, base_family=base_family)
    + theme(
-     plot.title = element_blank(),
-			 # plot.title = element_text(face = "bold", size = rel(1.2), hjust = 0.5),
+     # plot.title = element_blank(),
+			 plot.title = element_text(face = "bold", size = rel(1.2), hjust = 0.5),
 			 plot.background = element_rect(colour = NA),
 			 plot.margin=unit(c(5,5,5,5),"mm"),
 	     panel.background = element_rect(colour = NA),
@@ -123,5 +123,61 @@ plotCDFset <- function(df, info) {
   )
 	p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
 	# p <- p + ylim(0, 100)
+  p + theme2()
+}
+
+plotDensity <- function(df, info) {
+	p <- ggplot(df, aes(x = Density, y=data, fill= Density))
+  p <- p + geom_violin()
+  p <- p + stat_summary(
+    fun.data=meanStd, mult=1, geom="point", color="black", position=position_dodge(width=0.9)
+  )
+  p <- p + scale_fill_manual(
+    values = c("#cccccc", "#ffffff")
+	)
+  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
+	# p <- p + ylim(0, info$ylim)
+  p + theme2()
+}
+
+meanStd <- function(x) {
+   m <- mean(x)
+   ymin <- m-sd(x)
+   ymax <- m+sd(x)
+   return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
+plotDistribGroups <- function(ds, info, withBoxplot=FALSE) {
+	p <- ggplot(data = ds, aes(x = group, y = data, fill = Density) )
+  if (withBoxplot) {
+    p <- p + geom_boxplot()
+  } else {
+    p <- p + geom_violin()
+    p <- p + stat_summary(
+      fun.data=meanStd, mult=1, geom="point", color="black", positio=position_dodge(width=0.9)
+    )
+  }
+  p <- p + scale_fill_manual(
+    values = c("#cccccc", "#ffffff")
+	)
+  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
+	p <- p + ylim(0, info$ylim)
+  p + theme2()
+}
+
+plotColumns <- function(ds, info) {
+  p <- ggplot(data = ds, aes(x = group, y = data, fill = Density) )
+  p <- p + geom_col(position="dodge2", colour="black")
+
+  p <- p + geom_text(
+    aes(label=data, group=Density),
+    position=position_dodge(width=0.9), vjust=-.3
+  )
+
+  p <- p + scale_fill_manual(
+    values = c("#cccccc", "#ffffff")
+	)
+  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
+	p <- p + ylim(0, info$ylim)
   p + theme2()
 }
