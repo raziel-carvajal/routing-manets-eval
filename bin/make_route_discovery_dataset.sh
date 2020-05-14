@@ -35,7 +35,7 @@ allRoutes="${netDir}/chosenRoutes.data"
 sendInterval=`grep "sendInterval" ${1} | awk '{print $3}' | awk -F 's' '{print $1}'`
 iterations=`grep "repeat" ${1} | awk '{print $3}'`
 
-rm -fr ${outputLoc} ; mkdir ${outputLoc}
+[ ! -d ${outputLoc} ] && mkdir ${outputLoc}
 lineNo=2 ; configNo=1 ; lines=`wc -l ${allRoutes} | awk '{print $1}'`
 
 while [ ${lineNo} -ne ${lines} ]; do
