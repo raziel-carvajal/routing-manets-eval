@@ -36,6 +36,10 @@ source bin/set-env.sh ${1}
 temp=`dirname ${2}`"/${3}.stdout"
 opp_run -u Cmdenv -n networks/built:${INET_NED_PATH} -l ${INET_ROOT}/src/INET -c ${3} -f ${2} \
   &> ${temp}
-mv ${temp} $(dirname ${2})"/results/"
+if [ ${?} -ne 0 ] ; then
+  echo "Error. During the execution of configuration ${3}."
+else
+  echo "Ok. Correct execution of configuration ${3}."
+fi
 
-echo "Ok, ${0} ends successfully."
+mv ${temp} $(dirname ${2})"/results/"
