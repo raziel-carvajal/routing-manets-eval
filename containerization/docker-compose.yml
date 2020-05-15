@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: worker/Dockerfile
-    image: omnet-inet:latest
+    image: mexicalli/omnet-inet:latest
     volumes:
       - ./bin:/usr/manet_routing_benchmark/bin
       - ./configs:/usr/manet_routing_benchmark/configs
