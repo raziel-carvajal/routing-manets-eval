@@ -1,0 +1,12 @@
+version: "2.0"
+
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    image: omnet-inet:latest
+    volumes:
+      - ./bin:/usr/manet_routing_benchmark/bin
+      - ./configs:/usr/manet_routing_benchmark/configs
+      - ./networks:/usr/manet_routing_benchmark/networks
