@@ -63,7 +63,7 @@ sed -i -e "s/NETWORK_NAME/${scnId}/" ${nedFile}
 for protocol in `cat configs/protocols` ; do
   iniFile="${cnfgsDir}/${scnId}_${protocol}.ini"
   cat configs/general.ini >${iniFile}
-  scenario="*.scenarioManager.script = xmldoc("'"'"${origin}/${netsDir}/scenario.xml"'"'")"
+  scenario="*.scenarioManager.script = xmldoc("'"'"${netsDir}/scenario.xml"'"'")"
   echo ${scenario} >>${iniFile}
 
   ( [ ${protocol} != "aodv" ] && [ ${protocol} != "dsdv" ] ) && echo -e "Error. \
