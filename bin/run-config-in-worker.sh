@@ -16,14 +16,9 @@
 #       CREATED: 02/11/2020 17:31
 #      REVISION:  ---
 #===============================================================================
-endStr="End of ${0}"
-# check that the INI file exist
-[ ! -f ${INI_FILE} ] && \
-  echo -e "Error: configuration (*.ini) file doesn't exist.\n${endStr}" && exit 1
-# check that INI file contains the written configuration
-grep ${EXPERIMENT} ${INI_FILE}
-[ ${?} -ne 0 ] && \
-  echo -e "Error: experiment doesn't exist in ini file.\n${endStr}" && exit 1
+temp=`dirname ${1}`"/${2}.stdout"
 
-opp_run -u Cmdenv -n ${INET_NED_PATH} -l ${INET_ROOT}/src/INET \
-  -c ${EXPERIMENT} -f ${INI_FILE}
+opp_run -u Cmdenv -n networks/built:${INET_NED_PATH} -l ${INET_ROOT}/src/INET \
+  -c ${2} -f ${1} &> ${temp}
+
+mv ${temp} $(dirname ${1})"/results/"
