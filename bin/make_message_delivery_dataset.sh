@@ -30,7 +30,7 @@ datasetLoc=`dirname ${1}`"/${iniF}"
 [ ! -d ${datasetLoc} ] && mkdir ${datasetLoc}
 
 msgLossF="${datasetLoc}/messageloss"
-echo "total count" > ${msgLossF}
+echo "sent_messages lost_messages hops" > ${msgLossF}
 
 for logF in `ls ${logsDir}/*.stdout | grep "${iniF}"` ; do
   # add message latency
@@ -41,9 +41,9 @@ for logF in `ls ${logsDir}/*.stdout | grep "${iniF}"` ; do
   grep " time=" ${logF} | awk -F "time=" '{print $2}' | \
     awk -v h=${hopsNo} '{print $1, h}' >> ${dstF}
   # add message loss
-  msgNo=`grep "run #" ${logF} | wc -l`
-  lost=`wc -l ${dstF} | awk '{print $1}'` ; let lost=lost-1
-  echo "${msgNo} ${lost}" >> ${msgLossF}
+  sentMsgs=`grep "run #" ${logF} | wc -l`
+  lostMsgs=`wc -l ${dstF} | awk '{print $1}'` ; let lostMsgs=lostMsgs-1
+  echo "${sentMsgs} ${lostMsgs} ${hopsNo}" >> ${msgLossF}
 done
 
 Rscript -e " \
