@@ -18,6 +18,7 @@ parseArgs <- function() {
   # options
   p$add_argument('--with-arp-latency', dest='warpl', action='store_true')
   p$add_argument('--with-route-discovery-latency', dest='wrdl', action='store_true')
+  # options for env variable: R_SCRIPT_OPTIONS
   p$add_argument('--is-aodv-experiment', dest='isaodv', action='store_true')
   p$add_argument('--is-dsdv-experiment', dest='isdsdv', action='store_true')
 
