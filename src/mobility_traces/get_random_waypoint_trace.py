@@ -5,7 +5,6 @@ import utils_for_traces as utils
 from pymobility.models.mobility import random_waypoint
 from sys import exit
 
-
 def getArgs():
   p = argparse.ArgumentParser(
       description='Creates a mobility trace (in Bonmotion format) of an \
@@ -30,7 +29,6 @@ def getArgs():
       '--walks', dest='walks', type=int, default=1,
       help='Number of network topologies in this trace.')
   return p.parse_args()
-
 
 class CommunicationArea(object):
   def __init__(self, length, width, nodes):
