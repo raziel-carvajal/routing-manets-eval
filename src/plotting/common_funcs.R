@@ -114,32 +114,6 @@ theme2 <- function(base_size=10, base_family="Helvetica") {
 #----------------------------------------------------------------
 # miscelaneaus functions
 #----------------------------------------------------------------
-plotCDFset <- function(df, info) {
-	p <- ggplot(df, aes(x = data, linetype = Density))
-  p <- p + stat_ecdf(aes(y = ..y..*100), size = 0.5)
-  # labels = unique(df$Density),
-  p <- p + scale_linetype_manual(
-    values = c('solid', 'dotted')
-  )
-	p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
-	# p <- p + ylim(0, 100)
-  p + theme2()
-}
-
-plotDensity <- function(df, info) {
-	p <- ggplot(df, aes(x = Density, y=data, fill= Density))
-  p <- p + geom_violin()
-  p <- p + stat_summary(
-    fun.data=meanStd, mult=1, geom="point", color="black", position=position_dodge(width=0.9)
-  )
-  p <- p + scale_fill_manual(
-    values = c("#cccccc", "#ffffff")
-	)
-  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
-	# p <- p + ylim(0, info$ylim)
-  p + theme2()
-}
-
 meanStd <- function(x) {
    m <- mean(x)
    ymin <- m-sd(x)
@@ -147,14 +121,28 @@ meanStd <- function(x) {
    return(c(y=m,ymin=ymin,ymax=ymax))
 }
 
+plotCDFset <- function(df, info) {
+	p <- ggplot(df, aes(x = data, linetype = density))
+  p <- p + stat_ecdf(aes(y = ..y..*100), size = 0.5, pad = FALSE)
+  # # labels = unique(df$Density),
+  p <- p + scale_linetype_manual(
+    values = c('solid', 'dotted')
+  )
+	p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
+	# # p <- p + ylim(0, 100)
+  p + theme2()
+}
+
 plotDistribGroups <- function(ds, info, withBoxplot=FALSE) {
-	p <- ggplot(data = ds, aes(x = group, y = data, fill = Density) )
+	p <- ggplot(data = ds, aes(x = group, y = data, fill = density) )
   if (withBoxplot) {
-    p <- p + geom_boxplot()
+    p <- p + stat_boxplot( geom ='errorbar', width=0.25, position=position_dodge(width=0.75) )
+    p <- p + geom_boxplot( outlier.shape=NA, notch=TRUE )
+    # p <- p + geom_boxplot()
   } else {
     p <- p + geom_violin()
     p <- p + stat_summary(
-      fun.data=meanStd, mult=1, geom="point", color="black", positio=position_dodge(width=0.9)
+      fun.data=meanStd, mult=1, geom="point", color="black", position=position_dodge(width=0.9)
     )
   }
   p <- p + scale_fill_manual(
@@ -166,16 +154,16 @@ plotDistribGroups <- function(ds, info, withBoxplot=FALSE) {
 }
 
 plotColumns <- function(ds, info) {
-  p <- ggplot(data = ds, aes(x = group, y = data, fill = Density) )
+  p <- ggplot(data = ds, aes(x = group, y = data, fill = density) )
   p <- p + geom_col(position="dodge2", colour="black")
 
   p <- p + geom_text(
-    aes(label=data, group=Density),
+    aes(label=data, group=density),
     position=position_dodge(width=0.9), vjust=-.3
   )
 
   p <- p + scale_fill_manual(
-    values = c("#cccccc", "#ffffff")
+    values = c("#ffffff", "#cccccc")
 	)
   p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
 	p <- p + ylim(0, info$ylim)
