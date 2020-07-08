@@ -19,9 +19,9 @@
 eos="End of ${0}"
 
 [ ! -d bin ] && echo -e "ERROR. Run ${0} from root directory of RoVy repository as follows: \
-  source bin/${0} <ini-file> \n${eos}" && exit 1
+  source ${0} <ini-file> \n${eos}" && exit 1
 
-[ ! -f ${1} ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
+[ ! -f "${1}" ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
 
 for config in `grep "^\\[Config" ${1} | awk '{print $2}'` ; do
   config=`echo ${config} | awk -F "]" '{print $1}'`

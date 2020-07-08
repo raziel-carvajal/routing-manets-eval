@@ -23,7 +23,7 @@ eos="End of ${script}"
   RoVy repository as follows: source bin/${script} <ini-file> \n${eos}" && exit 1
 
 # check that the INI file exist
-[ ! -f ${1} ] && echo -e "Error. The provided INI file doesn't exist.\n${eos}" && exit 1
+[ ! -f "${1}" ] && echo -e "Error. The provided INI file doesn't exist.\n${eos}" && exit 1
 
 iniFullP=`dirname ${1}`"/"`basename ${1}`
 iniF=`echo ${iniFullP} | awk -F 'configs' '{print $2}'`

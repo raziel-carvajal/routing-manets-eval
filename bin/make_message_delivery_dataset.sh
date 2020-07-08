@@ -21,7 +21,7 @@ eos="End of ${0}"
 ( [ ! -d bin ] || [ ${#} != 1 ] )&& echo -e "ERROR. Run ${0} from root directory of RoVy \
   repository as follows: source bin/${0} <ini-file> \n${eos}" && exit 1
 
-[ ! -f ${1} ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
+[ ! -f "${1}" ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
 
 iniF=`basename ${1} | awk -F ".ini" '{print $1}'`
 logsDir=`dirname ${1}`"/results"

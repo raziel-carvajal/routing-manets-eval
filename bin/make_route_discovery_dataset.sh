@@ -21,7 +21,7 @@ eos="End of ${0}"
 ( [ ! -d bin ] || [ ${#} -ne 1 ] ) && echo -e "ERROR. Run ${0} from root directory of RoVy \
   repository as follows: source bin/${0} <ini-file> \n${eos}" && exit 1
 
-[ ! -f ${1} ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
+[ ! -f "${1}" ] && echo -e "ERROR. Configuration file do not exist. \n${eos}" && exit 1
 
 [ ! -v R_SCRIPT_OPTIONS ] && echo -e "ERROR. Before running ${0} set the following variable: \
   R_SCRIPT_OPTIONS. \n${eos}" &&  exit 1
