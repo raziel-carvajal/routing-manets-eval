@@ -18,8 +18,8 @@ parseArgs <- function() {
 
   p$parse_args()
 }
-args <- parseArgs()
 
+args <- parseArgs()
 sparseDs <- read.table(args$low_density_dataset, header=TRUE)
 denseDs  <- read.table(args$high_density_dataset, header=TRUE)
 names(sparseDs) <- c('data', 'group') ; names(denseDs) <- c('data', 'group')
@@ -27,14 +27,14 @@ names(sparseDs) <- c('data', 'group') ; names(denseDs) <- c('data', 'group')
 df <- data.frame(
   data=c( sparseDs$data, denseDs$data ),
   group=as.factor( c( sparseDs$group, denseDs$group ) ),
-  density=c( rep('sparse', length(sparseDs$data)), rep('dense', length(denseDs$data)) )
+  Scenario=c( rep('sparse', length(sparseDs$data)), rep('dense', length(denseDs$data)) )
 )
 df <- df[ order(df$group) ,]
 
 if (args$wal) {
   info <- data.frame(
-    title=paste("Latency of ARP session in", args$protocol, "(reactive) protocol"),
-    xlabel="Number of hops between source and destination",
+    title=paste("Route discovery latency ", args$protocol),
+    xlabel="Hops # between source and destination",
     ylabel="Latency (ms)",
     ylim=60
   )
@@ -43,8 +43,8 @@ if (args$wal) {
 
 if (args$wmela) {
   info <- data.frame(
-    title=paste("Latency of received messages in", args$protocol, "(reactive) protocol"),
-    xlabel="Number of hops between source and destination",
+    title=paste("Message latency ", args$protocol),
+    xlabel="Hops # between source and destination",
     ylabel="Latency (ms)",
     ylim=3000
   )
@@ -65,7 +65,7 @@ if (args$wmelo) {
     data.frame(
       data = sum(temp$received) / sum(temp$sent) * 100,
       group = as.factor( c(h) ),
-      density = as.factor( c("sparse") )
+      Scenario = as.factor( c("sparse") )
     )
   })
   sparse <- do.call("rbind", sparse)
@@ -75,17 +75,17 @@ if (args$wmelo) {
     data.frame(
       data = sum(temp$received) / sum(temp$sent) * 100,
       group = as.factor( c(h) ),
-      density = as.factor( c("dense") )
+      Scenario = as.factor( c("dense") )
     )
   })
   dense <- do.call("rbind", dense)
 
-  df <- do.call("rbind", list(sparse, dense))
+  df <- do.call("rbind", list(dense, sparse))
 
   info <- data.frame(
-    title=paste("Message delivery fraction in", args$protocol, "(reactive) protocol"),
-    xlabel="Number of hops between source and destination",
-    ylabel="Delivery fraction (%)",
+    title=paste("Throughput ", args$protocol),
+    xlabel="Hops # between source and destination",
+    ylabel="Message delivery fraction (%)",
     ylim=100
   )
   plotColumns(df, info)
@@ -103,7 +103,7 @@ if (args$wrdl) {
   # plotCDFset(df, info)
   info <- data.frame(
     title=paste(
-      "Route discovery latency in", args$protocol, "(reactive) protocol",
+      "Route discovery latency in", args$protocol, "protocol",
       "\n(the number of hops between source and destination varies in the range [4, 10]) "
     ),
     xlabel="Number of hops",

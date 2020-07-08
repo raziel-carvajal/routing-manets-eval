@@ -1,6 +1,7 @@
 library(ggplot2)
 library(grid)
 library(ggthemes)
+library(scales)
 
 #----------------------------------------------------------------
 # themes for papers
@@ -76,11 +77,11 @@ theme1 <- function(base_size=10, base_family="Helvetica") {
 	 )
 }
 
-theme2 <- function(base_size=10, base_family="Helvetica") {
+theme2 <- function(base_size=23, base_family="Helvetica") {
   (theme_foundation(base_size=base_size, base_family=base_family)
    + theme(
-     # plot.title = element_blank(),
-			 plot.title = element_text(face = "bold", size = rel(1.2), hjust = 0.5),
+       plot.title = element_blank(),
+			 # plot.title = element_text(face = "bold", size = rel(1.2), hjust = 0.5),
 			 plot.background = element_rect(colour = NA),
 			 plot.margin=unit(c(5,5,5,5),"mm"),
 	     panel.background = element_rect(colour = NA),
@@ -114,58 +115,81 @@ theme2 <- function(base_size=10, base_family="Helvetica") {
 #----------------------------------------------------------------
 # miscelaneaus functions
 #----------------------------------------------------------------
+plotCDFset <- function(df, info) {
+	p <- ggplot( df, aes(x=data, linetype=Scenario) )
+  p <- p + stat_ecdf( aes(y=..y..*100), size=0.5, pad=FALSE )
+  p <- p + scale_linetype_manual( values=c('solid', 'dotted') )
+	p <- p + labs( title=info$title, x=info$xlabel, y=info$ylabel )
+  p + theme2()
+}
+
 meanStd <- function(x) {
    m <- mean(x)
    ymin <- m-sd(x)
    ymax <- m+sd(x)
    return(c(y=m,ymin=ymin,ymax=ymax))
 }
-
-plotCDFset <- function(df, info) {
-	p <- ggplot(df, aes(x = data, linetype = density))
-  p <- p + stat_ecdf(aes(y = ..y..*100), size = 0.5, pad = FALSE)
-  # # labels = unique(df$Density),
-  p <- p + scale_linetype_manual(
-    values = c('solid', 'dotted')
-  )
-	p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
-	# # p <- p + ylim(0, 100)
-  p + theme2()
-}
-
-plotDistribGroups <- function(ds, info, withBoxplot=FALSE) {
-	p <- ggplot(data = ds, aes(x = group, y = data, fill = density) )
+plotDistribGroups <- function(ds, info, withBoxplot=FALSE, withDensity=TRUE) {
+  if ( withDensity ) {
+    p <- ggplot(data = ds, aes(x = group, y = data, fill = Scenario) )
+    # p <- p + scale_fill_manual( values=c("#cccccc", "#ffffff") )
+  } else {
+    p <- ggplot(data = ds, aes(x = group, y = data) )
+    # p <- p + scale_fill_manual( values=c("#ffffff") )
+  }
   if (withBoxplot) {
     p <- p + stat_boxplot( geom ='errorbar', width=0.25, position=position_dodge(width=0.75) )
-    p <- p + geom_boxplot( outlier.shape=NA, notch=TRUE )
-    # p <- p + geom_boxplot()
+    p <- p + geom_boxplot( outlier.shape=NA, notch=TRUE, fill='grey')
+
+    # NOTE plot with logarithmic scale
+    p <- p + scale_y_log10(
+      breaks = trans_breaks("log10", function(x) 10^x),
+      labels = trans_format("log10", math_format(10^.x) ),
+      limits = c(1, 10000)
+    )
+    p <- p + annotation_logticks(sides="l")
+
+    # NOTE no modifications in scale
+    # p <- p + ylim(0, info$ylim)
   } else {
     p <- p + geom_violin()
     p <- p + stat_summary(
       fun.data=meanStd, mult=1, geom="point", color="black", position=position_dodge(width=0.9)
     )
   }
-  p <- p + scale_fill_manual(
-    values = c("#cccccc", "#ffffff")
-	)
+  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
+  p + theme2()
+}
+
+plotColumns <- function(ds, info, withDensity=TRUE) {
+  if ( withDensity ) {
+    p <- ggplot(data = ds, aes(x = group, y = data, fill = Scenario) )
+    p <- p + scale_fill_manual( values=c("#cccccc", "#ffffff") )
+    p <- p + geom_text(
+      aes(label=data, group=Scenario),
+      position=position_dodge(width=1.1), vjust=-.3, size=5
+    )
+  } else {
+    p <- ggplot(data = ds, aes(x = group, y = data) )
+    p <- p + geom_text(
+      aes(label=data),
+      position=position_dodge(width=1.1), vjust=-.3, size=5
+    )
+  }
+
+  # p <- p + geom_col(position="dodge2", colour="black", fill="white")
+  p <- p + geom_col(position="dodge2", colour="black", fill="grey")
+
   p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
 	p <- p + ylim(0, info$ylim)
   p + theme2()
 }
 
-plotColumns <- function(ds, info) {
-  p <- ggplot(data = ds, aes(x = group, y = data, fill = density) )
-  p <- p + geom_col(position="dodge2", colour="black")
-
-  p <- p + geom_text(
-    aes(label=data, group=density),
-    position=position_dodge(width=0.9), vjust=-.3
-  )
-
-  p <- p + scale_fill_manual(
-    values = c("#ffffff", "#cccccc")
-	)
-  p <- p + labs(title=info$title, x=info$xlabel, y=info$ylabel)
-	p <- p + ylim(0, info$ylim)
+plotDistribByProtocol <- function(ds, info) {
+  p <- ggplot( ds, aes(x=data, linetype=protocol) )
+  p <- p + stat_ecdf( aes(y=..y..*100), size=0.5, pad=FALSE )
+  p <- p + scale_linetype_manual( values=c('solid', 'dotted') )
+  p <- p + scale_x_continuous(breaks=seq(0, 20, 2))
+	p <- p + labs( title=info$title, x=info$xlabel, y=info$ylabel )
   p + theme2()
 }

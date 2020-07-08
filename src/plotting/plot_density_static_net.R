@@ -14,12 +14,12 @@ parseArgs <- function() {
 args <- parseArgs()
 
 info <- data.frame(
-  title="Nodes degree in dense and sparse scenarios",
-  xlabel="Nodes degree",
-  ylabel="CDF of nodes degree (%)"
+  title="Nodes density",
+  xlabel="# of neighboring peers",
+  ylabel="CDF in % (nodes)"
 )
 
 ds <- read.csv(args$dataset, header=TRUE)
 ds$density <- as.factor(ds$density)
 
-plotCDFset(ds, info)
+plotCDFset(data.frame(data=ds$data, Scenario=ds$density), info)
