@@ -18,6 +18,7 @@ parseArgs <- function() {
   # options
   p$add_argument('--with-arp-latency', dest='warpl', action='store_true')
   p$add_argument('--with-route-discovery-latency', dest='wrdl', action='store_true')
+  p$add_argument('--with-sent-messages', dest='wsm', action='store_true')
   # options for env variable: R_SCRIPT_OPTIONS
   p$add_argument('--is-aodv-experiment', dest='isaodv', action='store_true')
   p$add_argument('--is-dsdv-experiment', dest='isdsdv', action='store_true')
@@ -55,18 +56,27 @@ if(args$warpl){
       NA
     )
   })
-  # take rid of min/max
-  nas <- arpLatency[ is.na(arpLatency) ]
-  arpLatency <- arpLatency[ !is.na(arpLatency) ]
-  arpLatency <- arpLatency[ arpLatency != min(arpLatency) & arpLatency != max(arpLatency) ]
+  # NOTE report all data when there is only one repetition per experiment
   storeDataset(
     data.frame(
-      arp_latency=c( arpLatency, rep(NA, length(nas)) ),
-      hops_btw_src_dst=rep( args$hops_no, length(arpLatency) + length(nas) )
+      arp_latency=arpLatency,
+      hops_btw_src_dst=rep( args$hops_no, length(arpLatency) )
     ),
     args$storage_loc,
     paste(args$config_id, "_", "arplatency", sep="")
   )
+  # # NOTE take rid of min/max when there are more than one repetition per experiment
+  # nas <- arpLatency[ is.na(arpLatency) ]
+  # arpLatency <- arpLatency[ !is.na(arpLatency) ]
+  # arpLatency <- arpLatency[ arpLatency != min(arpLatency) & arpLatency != max(arpLatency) ]
+  # storeDataset(
+  #   data.frame(
+  #     arp_latency=c( arpLatency, rep(NA, length(nas)) ),
+  #     hops_btw_src_dst=rep( args$hops_no, length(arpLatency) + length(nas) )
+  #   ),
+  #   args$storage_loc,
+  #   paste(args$config_id, "_", "arplatency", sep="")
+  # )
 }
 
 if(args$wrdl){
@@ -102,5 +112,23 @@ if(args$wrdl){
     ),
     args$storage_loc,
     paste(args$config_id, "_", "routediscoverylatency", sep="")
+  )
+}
+
+if(args$wsm){
+  sentMsgs <- lapply(0:(args$iterations - 1), function(i) {
+    dsf <- paste(args$dataset_location, '/', args$config_id, '-#', i, sep='')
+    df <- getScalarDataset(dsf, 'packetSentToLower:count')
+    df$value
+  })
+  sentMsgs <- unlist(sentMsgs)
+
+  storeDataset(
+    data.frame(
+      sent_messages_no=sentMsgs,
+      hops_btw_src_dst=rep( args$hops_no, length(sentMsgs) )
+    ),
+    args$storage_loc,
+    paste(args$config_id, "_", "sentmessagesno", sep="")
   )
 }
